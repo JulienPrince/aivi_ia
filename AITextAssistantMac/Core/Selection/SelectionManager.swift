@@ -68,12 +68,30 @@ class SelectionManager {
     
     // Méthode 2: Via clipboard (fallback)
     private func getSelectedTextViaClipboard() -> String? {
-        // Sauvegarder le contenu actuel du presse-papier
         let pasteboard = NSPasteboard.general
         let previousContent = pasteboard.string(forType: .string)
-        pasteboard.clearContents()
         
-        Logger.debug("Previous clipboard content saved")
+        // Mettre un marqueur unique dans le presse-papier pour détecter si Cmd+C a réellement copié quelque chose.
+        // Cela corrige le cas où l'utilisateur re-sélectionne exactement le même texte (le contenu copié peut être identique
+        // à l'ancien contenu du presse-papier).
+        let marker = "AIVI_MARKER_\(UUID().uuidString)"
+        pasteboard.clearContents()
+        pasteboard.setString(marker, forType: .string)
+        
+        // Laisser le temps au système de propager la nouvelle valeur du presse-papier.
+        Thread.sleep(forTimeInterval: 0.03)
+        
+        guard pasteboard.string(forType: .string) == marker else {
+            Logger.error("Failed to set clipboard marker")
+            if let previous = previousContent {
+                pasteboard.setString(previous, forType: .string)
+            } else {
+                pasteboard.clearContents()
+            }
+            return nil
+        }
+        
+        Logger.debug("Clipboard marker set, starting Cmd+C copy")
         
         // Obtenir l'application frontale AVANT de simuler Cmd+C
         guard let frontApp = NSWorkspace.shared.frontmostApplication else {
@@ -81,6 +99,8 @@ class SelectionManager {
             // Restaurer le contenu précédent
             if let previous = previousContent {
                 pasteboard.setString(previous, forType: .string)
+            } else {
+                pasteboard.clearContents()
             }
             return nil
         }
@@ -96,6 +116,8 @@ class SelectionManager {
             // Restaurer le contenu précédent
             if let previous = previousContent {
                 pasteboard.setString(previous, forType: .string)
+            } else {
+                pasteboard.clearContents()
             }
             return nil
         }
@@ -103,8 +125,9 @@ class SelectionManager {
         keyDown.flags = .maskCommand
         keyUp.flags = .maskCommand
         
-        // Post les événements
+        // Post les événements (petit délai entre down/up pour fiabilité)
         keyDown.post(tap: .cghidEventTap)
+        Thread.sleep(forTimeInterval: 0.02)
         keyUp.post(tap: .cghidEventTap)
         
         Logger.debug("Cmd+C simulated")
@@ -112,8 +135,9 @@ class SelectionManager {
         // Attendre plus longtemps pour que la copie se fasse (certaines apps sont lentes)
         var attempts = 0
         var copied: String? = nil
+        let maxAttempts = 30
         
-        while attempts < 15 && copied == nil {
+        while attempts < maxAttempts && copied == nil {
             Thread.sleep(forTimeInterval: 0.05) // 50ms entre chaque tentative
             
             // Vérifier que l'application frontale n'a pas changé
@@ -123,20 +147,15 @@ class SelectionManager {
                 // Restaurer le contenu précédent
                 if let previous = previousContent {
                     pasteboard.setString(previous, forType: .string)
+                } else {
+                    pasteboard.clearContents()
                 }
                 return nil
             }
-            
-            copied = pasteboard.string(forType: .string)
-            if let text = copied, !text.isEmpty {
-                // Vérifier que le texte copié est différent du contenu précédent
-                // (pour éviter de copier l'ancien contenu du presse-papier)
-                if text != previousContent {
-                    break
-                } else {
-                    // Le texte est le même que l'ancien contenu, continuer à attendre
-                    copied = nil
-                }
+            let currentClipboard = pasteboard.string(forType: .string)
+            if let text = currentClipboard, !text.isEmpty, text != marker {
+                copied = text
+                break
             }
             attempts += 1
         }
@@ -144,12 +163,22 @@ class SelectionManager {
         // Lire le texte copié
         if let copied = copied, !copied.isEmpty {
             Logger.info("Text copied successfully after \(attempts + 1) attempts: \(copied.prefix(50))...")
+            // Restaurer le contenu précédent
+            if let previous = previousContent {
+                pasteboard.clearContents()
+                pasteboard.setString(previous, forType: .string)
+            } else {
+                pasteboard.clearContents()
+            }
             return copied
         } else {
             Logger.warning("No text was copied after \(attempts + 1) attempts - nothing selected or copy failed")
             // Restaurer le contenu précédent si rien n'a été copié
             if let previous = previousContent {
+                pasteboard.clearContents()
                 pasteboard.setString(previous, forType: .string)
+            } else {
+                pasteboard.clearContents()
             }
             return nil
         }
