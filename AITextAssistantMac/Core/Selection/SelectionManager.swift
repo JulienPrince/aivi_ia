@@ -196,7 +196,7 @@ class SelectionManager {
         // Réactiver l'application originale si fournie
         if let originalApp = originalApp {
             Logger.debug("Reactivating original app: \(originalApp.localizedName ?? "unknown")")
-            originalApp.activate(options: [.activateIgnoringOtherApps])
+            originalApp.activate()
             // Attendre un court instant pour que l'application soit activée
             Thread.sleep(forTimeInterval: 0.15)
             
@@ -204,13 +204,13 @@ class SelectionManager {
             if NSWorkspace.shared.frontmostApplication?.processIdentifier != originalApp.processIdentifier {
                 Logger.warning("Failed to activate original app, retrying...")
                 Thread.sleep(forTimeInterval: 0.1)
-                originalApp.activate(options: [.activateIgnoringOtherApps])
+                originalApp.activate()
             }
         } else {
             // Sinon, essayer de réactiver l'application frontale actuelle
             if let frontApp = NSWorkspace.shared.frontmostApplication {
                 Logger.debug("Reactivating current front app: \(frontApp.localizedName ?? "unknown")")
-                frontApp.activate(options: [.activateIgnoringOtherApps])
+                frontApp.activate()
                 Thread.sleep(forTimeInterval: 0.15)
             } else {
                 Logger.error("No frontmost application available for text replacement")

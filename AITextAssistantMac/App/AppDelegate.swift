@@ -148,7 +148,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.isVisible = true
         
         // Forcer l'activation de l'application
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         
         // Notifier le système que la barre de menu a changé
         DistributedNotificationCenter.default().post(
@@ -188,7 +188,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.isVisible = true
         
         // Forcer l'activation pour s'assurer que l'app est active
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         
         // Forcer un refresh du système sur le thread principal
         DispatchQueue.main.async { [weak self] in
@@ -404,7 +404,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popupWindow = window
         
         // Activer l'application APRÈS avoir récupéré le texte
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         Logger.info("Action popup displayed")
     }
     
@@ -458,7 +458,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 Logger.debug("Onboarding window already exists, skipping creation")
                 // Mais on peut quand même la réafficher
                 self.onboardingWindow?.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
+                NSApp.activate()
                 return
             }
             
@@ -485,14 +485,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 object: window,
                 queue: .main
             ) { [weak self] _ in
-                self?.onboardingWindow = nil
-                self?.appState.showOnboarding = false
-                Logger.info("Onboarding window closed")
+                guard let self = self else { return }
+                DispatchQueue.main.async {
+                    self.onboardingWindow = nil
+                    self.appState.showOnboarding = false
+                    Logger.info("Onboarding window closed")
+                }
             }
             
             self.onboardingWindow = window
             self.appState.showOnboarding = true
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.activate()
             Logger.info("Onboarding window displayed successfully")
         }
     }

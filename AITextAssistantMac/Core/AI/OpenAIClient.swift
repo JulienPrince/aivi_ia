@@ -115,16 +115,6 @@ class OpenAIClient {
                 Logger.error("Error domain: \(nsError.domain), code: \(nsError.code)")
                 Logger.error("Error userInfo: \(nsError.userInfo)")
                 
-                // Message d'erreur plus détaillé
-                var errorMessage = "Erreur réseau: \(error.localizedDescription)"
-                if nsError.code == NSURLErrorNotConnectedToInternet {
-                    errorMessage = "Pas de connexion internet. Vérifiez votre connexion réseau."
-                } else if nsError.code == NSURLErrorCannotFindHost {
-                    errorMessage = "Impossible de contacter le serveur OpenAI. Vérifiez votre connexion internet."
-                } else if nsError.code == NSURLErrorTimedOut {
-                    errorMessage = "La requête a expiré. Vérifiez votre connexion internet."
-                }
-                
                 completion(.failure(OpenAIError.networkError(error)))
                 return
             }

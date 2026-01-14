@@ -13,11 +13,20 @@ struct ActionPopupView: View {
     @State private var originalText: String = ""
     @State private var resultText: String = ""
     @State private var errorMessage: String? = nil
+    @State private var showLanguageSelector: Bool = false
+    @State private var targetLanguage: String = "English"
+    @State private var textHistory: [(text: String, action: String)] = []
     
     let onDismiss: () -> Void
     
     private let selectionManager = SelectionManager()
     private let openAIClient = OpenAIClient()
+    
+    private let availableLanguages = [
+        "English", "French", "Spanish", "German", "Italian",
+        "Portuguese", "Russian", "Japanese", "Korean", "Chinese",
+        "Arabic", "Dutch", "Swedish", "Polish", "Turkish"
+    ]
     
     var body: some View {
         ZStack {
@@ -114,22 +123,99 @@ struct ActionPopupView: View {
                         .frame(height: 100)
                     }
                     
-                    // Boutons d'action côte à côte
-                    HStack(spacing: 12) {
-                        actionButton(
-                            title: "Corriger",
-                            subtitle: "Grammaire et orthographe",
-                            icon: "checkmark.circle.fill",
-                            color: .blue,
-                            action: .correct
-                        )
-                        
-                        actionButton(
-                            title: "Améliorer",
-                            subtitle: "Clarté et fluidité",
-                            icon: "wand.and.stars",
-                            color: .purple,
-                            action: .improve
+                    // Boutons d'action
+                    if !showLanguageSelector {
+                        VStack(spacing: 12) {
+                            HStack(spacing: 12) {
+                                actionButton(
+                                    title: "Corriger",
+                                    subtitle: "Grammaire et orthographe",
+                                    icon: "checkmark.circle.fill",
+                                    color: .blue,
+                                    action: .correct
+                                )
+                                
+                                actionButton(
+                                    title: "Améliorer",
+                                    subtitle: "Clarté et fluidité",
+                                    icon: "wand.and.stars",
+                                    color: .purple,
+                                    action: .improve
+                                )
+                            }
+                            
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    showLanguageSelector = true
+                                }
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "globe")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.green)
+                                        .frame(width: 18)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Traduire")
+                                            .font(.system(size: 13, weight: .medium))
+                                        
+                                        Text("Vers une autre langue")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(originalText.isEmpty)
+                        }
+                    } else {
+                        // Sélecteur de langue
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Langue cible")
+                                    .font(.system(size: 13, weight: .medium))
+                                Spacer()
+                                Button("Annuler") {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        showLanguageSelector = false
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            }
+                            
+                            Picker("Langue", selection: $targetLanguage) {
+                                ForEach(availableLanguages, id: \.self) { language in
+                                    Text(language).tag(language)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(maxWidth: .infinity)
+                            
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedAction = .translate(targetLanguage: targetLanguage)
+                                    showLanguageSelector = false
+                                    processAction(.translate(targetLanguage: targetLanguage))
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.right.circle.fill")
+                                    Text("Traduire")
+                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.regular)
+                        }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.quaternary.opacity(0.3))
                         )
                     }
                 }
@@ -239,12 +325,30 @@ struct ActionPopupView: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.primary)
                     
-                    Text(selectedAction == .correct ? "Correction" : "Amélioration")
+                    Text(actionTitle)
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }
                 
                 Spacer()
+                
+                // Bouton retour au texte original
+                if !textHistory.isEmpty {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            restoreOriginalText()
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.system(size: 11))
+                            Text("Original")
+                                .font(.system(size: 12))
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
             }
             .padding(.horizontal, 32)
             .padding(.top, 28)
@@ -252,16 +356,16 @@ struct ActionPopupView: View {
             
             // Comparaison
             HStack(spacing: 16) {
-                // Original
-                comparisonColumn(
-                    title: "Original",
-                    text: originalText,
+                // Original (éditable)
+                editableComparisonColumn(
+                    title: "Original (éditable)",
+                    text: $originalText,
                     color: .secondary
                 )
                 
                 // Résultat
                 comparisonColumn(
-                    title: selectedAction == .correct ? "Corrigé" : "Amélioré",
+                    title: resultTitle,
                     text: resultText,
                     color: .blue
                 )
@@ -272,6 +376,28 @@ struct ActionPopupView: View {
             
             // Actions
             HStack(spacing: 12) {
+                Button("Retour") {
+                    returnToSelection()
+                }
+                .buttonStyle(.bordered)
+                .keyboardShortcut(.escape)
+                
+                Button(action: {
+                    if let action = selectedAction {
+                        processAction(action)
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11))
+                        Text("Réappliquer")
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(appState.isLoading)
+                
+                Spacer()
+                
                 Button("Remplacer") {
                     confirmReplacement()
                 }
@@ -313,6 +439,86 @@ struct ActionPopupView: View {
         .frame(maxWidth: .infinity)
     }
     
+    // Colonne de comparaison éditable
+    private func editableComparisonColumn(title: String, text: Binding<String>, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                
+                Spacer()
+                
+                Image(systemName: "pencil.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            
+            NoScrollTextEditor(text: text)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(color.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(color.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .frame(height: 220)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    // Titre de l'action
+    private var actionTitle: String {
+        guard let action = selectedAction else { return "" }
+        switch action {
+        case .correct:
+            return "Correction"
+        case .improve:
+            return "Amélioration"
+        case .translate(let targetLanguage):
+            return "Traduction vers \(targetLanguage)"
+        }
+    }
+    
+    // Titre du résultat
+    private var resultTitle: String {
+        guard let action = selectedAction else { return "" }
+        switch action {
+        case .correct:
+            return "Corrigé"
+        case .improve:
+            return "Amélioré"
+        case .translate(let targetLanguage):
+            return "Traduit en \(targetLanguage)"
+        }
+    }
+    
+    // Restaurer le texte original
+    private func restoreOriginalText() {
+        guard !textHistory.isEmpty else { return }
+        
+        resultText = originalText
+        textHistory.removeAll()
+        selectedAction = nil
+        
+        Logger.info("Text restored to original")
+    }
+    
+    // Retourner à la sélection d'action
+    private func returnToSelection() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            selectedAction = nil
+            resultText = ""
+            errorMessage = nil
+            showLanguageSelector = false
+        }
+        Logger.info("Returned to action selection")
+    }
+    
     // Charger le texte sélectionné
     private func loadSelectedText() {
         Logger.debug("Loading selected text in ActionPopupView")
@@ -321,6 +527,8 @@ struct ActionPopupView: View {
         selectedAction = nil
         resultText = ""
         errorMessage = nil
+        textHistory = []
+        showLanguageSelector = false
         
         // Utiliser le texte déjà récupéré par AppDelegate si disponible
         if let text = appState.selectedText, !text.isEmpty {
@@ -367,11 +575,15 @@ struct ActionPopupView: View {
                 switch result {
                 case .success(let text):
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        // Sauvegarder dans l'historique avant de modifier
+                        if !resultText.isEmpty {
+                            textHistory.append((text: resultText, action: actionTitle))
+                        }
                         resultText = text
                     }
                     appState.lastResult = text
-                    appState.lastAction = action
-                    Logger.info("Action \(action) completed successfully")
+                    appState.lastActionDescription = actionTitle
+                    Logger.info("Action completed successfully")
                     
                 case .failure(let error):
                     errorMessage = error.localizedDescription
@@ -410,3 +622,64 @@ struct VisualEffectView: NSViewRepresentable {
 
 // Alias pour compatibilité
 typealias AIIcon = AIIconView
+
+// TextView personnalisé sans scrollbar visible
+struct NoScrollTextEditor: NSViewRepresentable {
+    @Binding var text: String
+    
+    func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSTextView.scrollableTextView()
+        let textView = scrollView.documentView as! NSTextView
+        
+        // Configuration du textView
+        textView.font = .systemFont(ofSize: 13)
+        textView.textColor = .labelColor
+        textView.backgroundColor = .clear
+        textView.isEditable = true
+        textView.isSelectable = true
+        textView.allowsUndo = true
+        textView.isRichText = false
+        textView.delegate = context.coordinator
+        
+        // Configuration de la scrollbar (apparaît seulement si nécessaire)
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true  // Se cache automatiquement si pas nécessaire
+        scrollView.scrollerStyle = .overlay    // Style overlay discret
+        scrollView.backgroundColor = .clear
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+        
+        // Configuration du container
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(width: scrollView.contentSize.width, height: .greatestFiniteMagnitude)
+        
+        textView.string = text
+        
+        return scrollView
+    }
+    
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        let textView = scrollView.documentView as! NSTextView
+        if textView.string != text {
+            textView.string = text
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: NoScrollTextEditor
+        
+        init(_ parent: NoScrollTextEditor) {
+            self.parent = parent
+        }
+        
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            parent.text = textView.string
+        }
+    }
+}

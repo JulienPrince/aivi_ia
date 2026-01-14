@@ -28,7 +28,7 @@ class AppState: ObservableObject {
     
     // Résultat de la dernière action
     @Published var lastResult: String? = nil
-    @Published var lastAction: TextAction? = nil
+    @Published var lastActionDescription: String? = nil
     
     // Onboarding
     @Published var hasCompletedOnboarding: Bool {

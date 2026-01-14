@@ -11,33 +11,6 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Action principale
-            Button(action: {
-                Logger.info("Action triggered from menu bar")
-                if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                    DispatchQueue.main.async {
-                        appDelegate.handleKeyboardShortcut()
-                    }
-                }
-            }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 11))
-                        .frame(width: 12)
-                    Text("Corriger/Améliorer")
-                        .font(.system(size: 12))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 0)
-            .frame(height: 22)
-            .keyboardShortcut("a", modifiers: [.command, .shift])
-
-            Divider()
-                .frame(height: 1)
-
             // Paramètres
             Button(action: showSettings) {
                 HStack(spacing: 6) {
@@ -131,7 +104,7 @@ struct MenuBarView: View {
         hostingView.frame = NSRect(x: 0, y: 0, width: 420, height: 400)
         window.contentView = hostingView
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
     }
     
     private func showShortcutConfig() {
@@ -167,7 +140,7 @@ struct MenuBarView: View {
         hostingView.frame = NSRect(x: 0, y: 0, width: 500, height: 300)
         window.contentView = hostingView
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
     }
     
     private func resetApplication() {
@@ -186,7 +159,12 @@ struct MenuBarView: View {
             UserDefaults.standard.synchronize()
             
             // Supprimer la clé API du Keychain
-            KeychainManager.deleteAPIKey()
+            let deleteSuccess = KeychainManager.deleteAPIKey()
+            if deleteSuccess {
+                Logger.info("API key deleted successfully")
+            } else {
+                Logger.warning("Failed to delete API key from Keychain")
+            }
             
             // Réinitialiser l'état sur le main thread
             DispatchQueue.main.async {

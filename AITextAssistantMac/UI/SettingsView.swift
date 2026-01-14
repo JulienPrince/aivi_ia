@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var showAPIKey: Bool = false
     @State private var errorMessage: String? = nil
     @State private var successMessage: String? = nil
+    @State private var currentShortcut: String = ""
     
     let onDismiss: () -> Void
     
@@ -69,6 +70,13 @@ struct SettingsView: View {
                                 
                                 Spacer()
                                 
+                                Button("Réinitialiser") {
+                                    resetAPIKey()
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .disabled(!appState.hasAPIKey)
+                                
                                 Button("Enregistrer") {
                                     saveAPIKey()
                                 }
@@ -95,6 +103,30 @@ struct SettingsView: View {
                                 }
                             }
                         )
+                    }
+                    
+                    // Section Raccourci clavier
+                    settingsSection(title: "Raccourci clavier") {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Raccourci de lancement")
+                                    .font(.system(size: 12, weight: .medium))
+                                
+                                HStack(spacing: 6) {
+                                    Text(currentShortcut.isEmpty ? "⌘⇧A" : currentShortcut)
+                                        .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                                        .foregroundColor(.primary)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            Button("Modifier") {
+                                showShortcutConfig()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
                     }
                     
                     // Messages d'erreur/succès
@@ -206,6 +238,12 @@ struct SettingsView: View {
         }
         appState.checkPermissions()
         appState.checkAPIKey()
+        updateCurrentShortcut()
+    }
+    
+    private func updateCurrentShortcut() {
+        let shortcut = KeyboardShortcutManager.shared.loadShortcut()
+        currentShortcut = shortcut.displayString
     }
     
     private func saveAPIKey() {
@@ -224,6 +262,22 @@ struct SettingsView: View {
             errorMessage = nil
         } else {
             errorMessage = "Impossible de sauvegarder la clé API"
+            successMessage = nil
+        }
+    }
+    
+    private func resetAPIKey() {
+        errorMessage = nil
+        successMessage = nil
+        
+        let success = KeychainManager.deleteAPIKey()
+        if success {
+            apiKey = ""
+            appState.checkAPIKey()
+            successMessage = "Clé API réinitialisée avec succès"
+            errorMessage = nil
+        } else {
+            errorMessage = "Impossible de réinitialiser la clé API"
             successMessage = nil
         }
     }
@@ -248,6 +302,10 @@ struct SettingsView: View {
                 Logger.info("Shortcut saved callback: \(newShortcut.displayString)")
                 DispatchQueue.main.async {
                     window?.close()
+                    // Mettre à jour l'affichage du raccourci après la fermeture
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.updateCurrentShortcut()
+                    }
                 }
             },
             onCancel: { [weak window] in
@@ -261,7 +319,8 @@ struct SettingsView: View {
         hostingView.frame = NSRect(x: 0, y: 0, width: 500, height: 300)
         window.contentView = hostingView
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
     }
 }
+
 
