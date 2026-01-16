@@ -126,21 +126,21 @@ struct ActionPopupView: View {
                     // Boutons d'action
                     if !showLanguageSelector {
                         VStack(spacing: 12) {
-                            HStack(spacing: 12) {
-                                actionButton(
-                                    title: "Corriger",
-                                    subtitle: "Grammaire et orthographe",
-                                    icon: "checkmark.circle.fill",
-                                    color: .blue,
-                                    action: .correct
-                                )
-                                
-                                actionButton(
-                                    title: "Améliorer",
-                                    subtitle: "Clarté et fluidité",
-                                    icon: "wand.and.stars",
-                                    color: .purple,
-                                    action: .improve
+                    HStack(spacing: 12) {
+                        actionButton(
+                            title: "Corriger",
+                            subtitle: "Grammaire et orthographe",
+                            icon: "checkmark.circle.fill",
+                            color: .blue,
+                            action: .correct
+                        )
+                        
+                        actionButton(
+                            title: "Améliorer",
+                            subtitle: "Clarté et fluidité",
+                            icon: "wand.and.stars",
+                            color: .purple,
+                            action: .improve
                                 )
                             }
                             

@@ -4,10 +4,21 @@ Une application macOS native qui utilise l'intelligence artificielle pour corrig
 
 ## 🎯 Fonctionnalités
 
-- **Correction automatique** : Corrige la grammaire et l'orthographe de votre texte sélectionné
-- **Amélioration du texte** : Améliore la clarté et la fluidité de votre écriture
+### Actions principales
+
+- **Correction automatique** : Corrige la grammaire, l'orthographe et la ponctuation avec des prompts optimisés pour une fiabilité maximale
+- **Amélioration du texte** : Améliore la clarté, la fluidité et la structure tout en préservant le sens original
+- **Traduction** : Traduit votre texte vers 15 langues différentes (English, French, Spanish, German, Italian, Portuguese, Russian, Japanese, Korean, Chinese, Arabic, Dutch, Swedish, Polish, Turkish)
+
+### Fonctionnalités avancées
+
+- **Détection automatique de la langue** : Détecte automatiquement la langue du texte sélectionné pour des résultats optimaux
+- **Prévisualisation interactive** :
+  - Modifiez le texte original directement dans la prévisualisation
+  - Réappliquez l'action après modification
+  - Retournez au texte original en un clic
+  - Retournez à la sélection d'action pour choisir une autre option
 - **Raccourci clavier global** : Utilisez `⌘⇧A` (configurable) depuis n'importe quelle application
-- **Prévisualisation** : Visualisez les modifications avant de les appliquer
 - **Application menu bar** : Fonctionne discrètement depuis la barre de menu
 - **Sécurisé** : Votre clé API est stockée de manière sécurisée dans le Keychain macOS
 
@@ -54,9 +65,11 @@ Lors du premier lancement, l'application vous guidera à travers un processus d'
 
 Dans les paramètres, vous pouvez :
 
-- Modifier votre clé API OpenAI
-- Configurer le raccourci clavier personnalisé
-- Réinitialiser l'application
+- **Modifier votre clé API OpenAI** : Entrez ou modifiez votre clé API
+- **Réinitialiser le token API** : Supprimez votre clé API actuelle
+- **Configurer le raccourci clavier** : Personnalisez le raccourci de lancement (par défaut `⌘⇧A`)
+- **Voir le raccourci actuel** : Affiche le raccourci clavier configuré
+- **Réinitialiser l'application** : Supprime toutes les préférences et redémarre l'onboarding
 
 ## 🎮 Utilisation
 
@@ -66,12 +79,19 @@ Dans les paramètres, vous pouvez :
 
 3. **Choisissez une action** :
 
-   - **Corriger** : Corrige la grammaire et l'orthographe
-   - **Améliorer** : Améliore la clarté et la fluidité du texte
+   - **Corriger** : Corrige la grammaire, l'orthographe et la ponctuation
+   - **Améliorer** : Améliore la clarté, la fluidité et la structure du texte
+   - **Traduire** : Sélectionnez une langue cible parmi 15 langues disponibles
 
-4. **Prévisualisez** le résultat dans la fenêtre popup
+4. **Prévisualisez et ajustez** :
 
-5. **Cliquez sur "Remplacer"** pour appliquer les modifications
+   - Visualisez le résultat dans la fenêtre popup
+   - **Modifiez le texte original** directement dans la zone éditable si nécessaire
+   - **Réappliquez l'action** pour voir un nouveau résultat
+   - **Retournez au texte original** avec le bouton "Original" (si disponible)
+   - **Retournez à la sélection** avec le bouton "Retour" pour choisir une autre action
+
+5. **Cliquez sur "Remplacer"** pour appliquer les modifications dans votre application
 
 ## 🏗️ Architecture
 
@@ -111,6 +131,7 @@ AITextAssistantMac/
 - **SwiftUI** : Interface utilisateur moderne
 - **AppKit** : Intégration macOS native
 - **OpenAI API** : Modèle GPT-4o-mini pour le traitement du texte
+- **Natural Language Framework** : Détection automatique de la langue
 - **Keychain Services** : Stockage sécurisé de la clé API
 - **Accessibility API** : Lecture et modification du texte sélectionné
 
@@ -144,6 +165,19 @@ AITextAssistantMac/
 - L'application utilise le modèle `gpt-4o-mini` par défaut (configurable dans `Constants.swift`)
 - Le timeout des requêtes API est fixé à 30 secondes
 - L'application fonctionne uniquement sur macOS
+- Les prompts sont optimisés pour garantir des résultats fiables et précis
+- La détection de langue utilise le framework Natural Language d'Apple pour une précision maximale
+
+## 🆕 Nouvelles fonctionnalités (Dernière mise à jour)
+
+### Version actuelle
+
+- ✨ **Traduction multi-langues** : Support de 15 langues avec sélection intuitive
+- 🎯 **Prompts améliorés** : Instructions détaillées pour des résultats plus fiables
+- 🔄 **Édition en temps réel** : Modifiez le texte original et réappliquez l'action
+- ↩️ **Navigation améliorée** : Boutons Retour et Original pour une meilleure expérience
+- 🌍 **Détection automatique** : Détection intelligente de la langue source
+- ⚙️ **Paramètres enrichis** : Réinitialisation du token et configuration du raccourci visibles
 
 ## 📄 Licence
 
